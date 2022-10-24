@@ -2,11 +2,19 @@ import os
 import shutil
 import time
 import hashlib
-import gradio
+import gradio as gr
+import modules.extras
+import modules.ui
+from modules.shared import opts, cmd_opts
+from modules import shared
+from modules import script_callbacks
+
 system_bak_path = "webui_log_and_bak"
 custom_tab_name = "custom fold"
 faverate_tab_name = "favorites"
 tabs_list = ["txt2img", "img2img", "extras", faverate_tab_name]
+num_of_imgs_per_page = 0
+loads_files_num = 0
 def is_valid_date(date):
     try:
         time.strptime(date, "%Y%m%d")
@@ -55,100 +63,39 @@ def traverse_all_files(curr_path, image_list, all_type=False):
             image_list = traverse_all_files(file, image_list)
     return image_list
 
-def auto_sorting(dir_name):    
-    bak_path = os.path.join(dir_name, system_bak_path)
-    if not os.path.exists(bak_path):
-        os.mkdir(bak_path)
-    log_file = None 
-    files_list = []    
-    f_list = os.listdir(dir_name)
-    for file in f_list:   
-        if file == system_bak_path:
-            continue     
-        file_path = os.path.join(dir_name, file)
-        if not is_valid_date(file):
-            if file[-10:].rfind(".") > 0:
-                files_list.append(file_path)
-            else:
-                files_list = traverse_all_files(file_path, files_list, all_type=True)
-
-    for file in files_list:        
-        date_str = time.strftime("%Y%m%d",time.localtime(os.path.getmtime(file)))
-        file_path = os.path.dirname(file)
-        hash_path = hashlib.md5(file_path.encode()).hexdigest()
-        path = os.path.join(dir_name, date_str, hash_path)
-        if not os.path.exists(path):
-            os.makedirs(path)
-        if log_file is None:
-            log_file = open(os.path.join(bak_path,"path_mapping.csv"),"a") 
-        log_file.write(f"{hash_path},{file_path}\n")
-        reduplicative_file_move(file, path)
-       
-    date_list = []
-    f_list = os.listdir(dir_name)
-    for f in f_list:
-        if is_valid_date(f):
-            date_list.append(f)
-        elif f == system_bak_path:
-            continue
-        else:
-            try:
-                reduplicative_file_move(os.path.join(dir_name, f), bak_path)  
-            except:
-                pass         
-            
-    today = time.strftime("%Y%m%d",time.localtime(time.time()))
-    if today not in date_list:
-        date_list.append(today)
-    return sorted(date_list, reverse=True)
-
 def archive_images(dir_name, date_to):    
     filenames = []   
-    batch_size =int(opts.images_history_num_per_page * opts.images_history_pages_num)
-    if batch_size <= 0:
-        batch_size = opts.images_history_num_per_page * 6
+    batch_size = loads_files_num
     today = time.strftime("%Y%m%d",time.localtime(time.time()))
     date_to = today if date_to is None  or date_to == "" else date_to
     date_to_bak = date_to 
-    if False: #opts.images_history_reconstruct_directory:        
-        date_list = auto_sorting(dir_name)               
-        for date in date_list:
-            if date <= date_to:
-                path = os.path.join(dir_name, date)
-                if date == today and not os.path.exists(path):
-                    continue
-                filenames = traverse_all_files(path, filenames)
-            if len(filenames) > batch_size:            
-                break
-        filenames = sorted(filenames, key=lambda file: -os.path.getmtime(file))
+    filenames = traverse_all_files(dir_name, filenames)  
+    total_num = len(filenames) 
+    tmparray = [(os.path.getmtime(file), file) for file in filenames ]
+    date_stamp = time.mktime(time.strptime(date_to, "%Y%m%d")) + 86400      
+    filenames = []
+    date_list = {date_to:None}
+    date = time.strftime("%Y%m%d",time.localtime(time.time()))
+    for t, f in tmparray:
+        date = time.strftime("%Y%m%d",time.localtime(t))
+        date_list[date] = None
+        if t <= date_stamp:
+            filenames.append((t, f ,date))
+    date_list = sorted(list(date_list.keys()), reverse=True)
+    sort_array = sorted(filenames, key=lambda x:-x[0])
+    if len(sort_array) > batch_size:
+        date = sort_array[batch_size][2]
+        filenames = [x[1] for x in sort_array]
     else:
-        filenames = traverse_all_files(dir_name, filenames)  
-        total_num = len(filenames) 
-        tmparray = [(os.path.getmtime(file), file) for file in filenames ]
-        date_stamp = time.mktime(time.strptime(date_to, "%Y%m%d")) + 86400      
-        filenames = []
-        date_list = {date_to:None}
-        date = time.strftime("%Y%m%d",time.localtime(time.time()))
-        for t, f in tmparray:
-            date = time.strftime("%Y%m%d",time.localtime(t))
-            date_list[date] = None
-            if t <= date_stamp:
-                filenames.append((t, f ,date))
-        date_list = sorted(list(date_list.keys()), reverse=True)
-        sort_array = sorted(filenames, key=lambda x:-x[0])
-        if len(sort_array) > batch_size:
-            date = sort_array[batch_size][2]
-            filenames = [x[1] for x in sort_array]
-        else:
-            date =  date_to if len(sort_array) == 0 else sort_array[-1][2]
-            filenames = [x[1] for x in sort_array]
-        filenames = [x[1] for x in sort_array if x[2]>= date]   
+        date =  date_to if len(sort_array) == 0 else sort_array[-1][2]
+        filenames = [x[1] for x in sort_array]
+    filenames = [x[1] for x in sort_array if x[2]>= date]   
     num = len(filenames)  
     last_date_from = date_to_bak if num == 0 else time.strftime("%Y%m%d", time.localtime(time.mktime(time.strptime(date, "%Y%m%d")) - 1000))
     date = date[:4] + "/" + date[4:6] + "/" + date[6:8]
     date_to_bak = date_to_bak[:4] + "/" + date_to_bak[4:6] + "/" + date_to_bak[6:8]
     load_info = "<div style='color:#999' align='center'>"
-    load_info += f"{total_num} images in this directory. Loaded {num} images during {date} - {date_to_bak}, divided into {int((num + 1) // opts.images_history_num_per_page + 1)} pages"
+    load_info += f"{total_num} images in this directory. Loaded {num} images during {date} - {date_to_bak}, divided into {int((num + 1) // num_of_imgs_per_page  + 1)} pages"
     load_info += "</div>"
     _, image_list, _, _, visible_num = get_recent_images(1, 0, filenames)
     return (
@@ -161,7 +108,7 @@ def archive_images(dir_name, date_to):
         "",
         visible_num, 
         last_date_from, 
-        gradio.update(visible=total_num > num)
+        gr.update(visible=total_num > num)
     )
 
 def delete_image(delete_num, name, filenames, image_index, visible_num):
@@ -200,7 +147,6 @@ def save_image(file_name):
 
 def get_recent_images(page_index, step, filenames):
     page_index = int(page_index)
-    num_of_imgs_per_page = int(opts.images_history_num_per_page)
     max_page_index = len(filenames) // num_of_imgs_per_page + 1
     page_index = max_page_index if page_index == -1 else page_index + step
     page_index = 1 if page_index < 1 else page_index
@@ -250,12 +196,12 @@ def page_index_change(page_index, filenames):
     return get_recent_images(page_index, 0, filenames)
 
 def show_image_info(tabname_box, num, page_index, filenames):
-    file = filenames[int(num) + int((page_index - 1) * int(opts.images_history_num_per_page))]   
+    file = filenames[int(num) + int((page_index - 1) * num_of_imgs_per_page)]   
     tm =   "<div style='color:#999' align='right'>" + time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(os.path.getmtime(file))) + "</div>"
     return file, tm, num, file
 
 def enable_page_buttons():
-    return gradio.update(visible=True)
+    return gr.update(visible=True)
 
 def change_dir(img_dir, date_to):
     warning = None
@@ -271,11 +217,11 @@ def change_dir(img_dir, date_to):
         warning = "The format of the directory is incorrect"
     if warning is None:        
         today = time.strftime("%Y%m%d",time.localtime(time.time()))
-        return gradio.update(visible=False), gradio.update(visible=True), None,   None if date_to != today else today, gradio.update(visible=True), gradio.update(visible=True)
+        return gr.update(visible=False), gr.update(visible=True), None,   None if date_to != today else today, gr.update(visible=True), gr.update(visible=True)
     else:
-        return gradio.update(visible=True), gradio.update(visible=False), warning, date_to, gradio.update(visible=False), gradio.update(visible=False)
+        return gr.update(visible=True), gr.update(visible=False), warning, date_to, gr.update(visible=False), gr.update(visible=False)
 
-def show_images_history(gr, opts, tabname, run_pnginfo, switch_dict):
+def show_images_history(tabname):
     custom_dir = False
     if tabname == "txt2img":
         dir_name = opts.outdir_txt2img_samples
@@ -324,7 +270,7 @@ def show_images_history(gr, opts, tabname, run_pnginfo, switch_dict):
                         next_page = gr.Button('Next Page')
                         end_page = gr.Button('End Page')                 
 
-                    history_gallery = gr.Gallery(show_label=False, elem_id=tabname + "_images_history_gallery").style(grid=opts.images_history_grid_num)
+                    history_gallery = gr.Gallery(show_label=False, elem_id=tabname + "_images_history_gallery").style(grid=opts.images_history_page_columns)
                     with gr.Row():
                         delete_num = gr.Number(value=1, interactive=True, label="number of images to delete consecutively next")
                         delete = gr.Button('Delete', elem_id=tabname + "_images_history_del_button")
@@ -399,26 +345,58 @@ def show_images_history(gr, opts, tabname, run_pnginfo, switch_dict):
     # other funcitons
     set_index.click(show_image_info, _js="images_history_get_current_img", inputs=[tabname_box, image_index, page_index, filenames], outputs=[img_file_name, img_file_time, image_index, hidden])
     img_file_name.change(fn=None, _js="images_history_enable_del_buttons", inputs=None, outputs=None)   
-    hidden.change(fn=run_pnginfo, inputs=[hidden], outputs=[info1, img_file_info, info2])
-    switch_dict["fn"](pnginfo_send_to_txt2img, switch_dict["t2i"], img_file_info, 'switch_to_txt2img')
-    switch_dict["fn"](pnginfo_send_to_img2img, switch_dict["i2i"], img_file_info, 'switch_to_img2img_img2img')
+    hidden.change(fn=modules.extras.run_pnginfo, inputs=[hidden], outputs=[info1, img_file_info, info2])
+    modules.generation_parameters_copypaste.connect_paste(pnginfo_send_to_txt2img, modules.ui.txt2img_paste_fields, img_file_info, 'switch_to_txt2img')
+    modules.generation_parameters_copypaste.connect_paste(pnginfo_send_to_img2img, modules.ui.img2img_paste_fields, img_file_info, 'switch_to_img2img_img2img')
 
    
 
-def create_history_tabs(gr, sys_opts, cmp_ops, run_pnginfo, switch_dict):
-    global opts;
-    opts = sys_opts
-    loads_files_num = int(opts.images_history_num_per_page)
-    num_of_imgs_per_page = int(opts.images_history_num_per_page * opts.images_history_pages_num)
-    if cmp_ops.browse_all_images:
+def on_ui_tabs():
+    global num_of_imgs_per_page
+    global loads_files_num
+    num_of_imgs_per_page = int(opts.images_history_page_columns * opts.images_history_page_rows)
+    loads_files_num = int(opts.images_history_pages_perload * num_of_imgs_per_page)
+    if cmd_opts.browse_all_images:
         tabs_list.append(custom_tab_name)
     with gr.Blocks(analytics_enabled=False) as images_history:
         with gr.Tabs() as tabs:
             for tab in tabs_list:
                 with gr.Tab(tab):
                     with gr.Blocks(analytics_enabled=False) :
-                        show_images_history(gr, opts, tab, run_pnginfo, switch_dict)
-        gradio.Checkbox(opts.images_history_preload, elem_id="images_history_preload", visible=False)         
-        gradio.Textbox(",".join(tabs_list), elem_id="images_history_tabnames_list", visible=False)    
+                        show_images_history(tab)
+        gr.Checkbox(opts.images_history_preload, elem_id="images_history_preload", visible=False)         
+        gr.Textbox(",".join(tabs_list), elem_id="images_history_tabnames_list", visible=False)    
         
-    return images_history
+    return (images_history , "Image Browser", "images_history"),
+
+def on_ui_settings():
+
+    section = ('images-history', "Images Browser")
+    shared.opts.add_option("images_history_preload", shared.OptionInfo(False, "Preload images at startup", section=section))
+    shared.opts.add_option("images_history_page_columns", shared.OptionInfo(6, "Number of columns on the page", section=section))
+    shared.opts.add_option("images_history_page_rows", shared.OptionInfo(6, "Number of rows on the page", section=section))
+    shared.opts.add_option("images_history_pages_perload", shared.OptionInfo(20, "Minimum number of pages per load", section=section))
+
+
+# options_templates.update(options_section(('inspiration', "Inspiration"), {
+#     "inspiration_dir": OptionInfo("inspiration", "Directory of inspiration", component_args=hide_dirs),
+#     "inspiration_max_samples": OptionInfo(4, "Maximum number of samples, used to determine which folders to skip when continue running the create script", gr.Slider, {"minimum": 1, "maximum": 20, "step": 1}),
+#     "inspiration_rows_num":  OptionInfo(4, "Rows of inspiration interface frame", gr.Slider, {"minimum": 4, "maximum": 16, "step": 1}),
+#     "inspiration_cols_num":  OptionInfo(8, "Columns of inspiration interface frame", gr.Slider, {"minimum": 4, "maximum": 16, "step": 1}),
+# }))
+
+ #images history
+    # images_history_switch_dict = {
+    #     "fn": modules.generation_parameters_copypaste.connect_paste,
+    #     "t2i": txt2img_paste_fields,
+    #     "i2i": img2img_paste_fields
+    # }
+
+    # browser_interface = images_history.create_history_tabs(gr, opts, cmd_opts, wrap_gradio_call(modules.extras.run_pnginfo), images_history_switch_dict)
+    # inspiration_interface = inspiration.ui(gr, opts, txt2img_prompt, img2img_prompt)
+
+    #         (inspiration_interface, "Inspiration", "inspiration"),
+    #     (browser_interface , "Image Browser", "images_history"),
+
+script_callbacks.on_ui_settings(on_ui_settings)
+script_callbacks.on_ui_tabs(on_ui_tabs)
