@@ -5,7 +5,7 @@ import hashlib
 import gradio as gr
 import modules.extras
 import modules.ui
-from modules.shared import opts, cmd_opts
+from modules.shared import opts
 from modules import shared
 from modules import script_callbacks
 
@@ -356,8 +356,7 @@ def on_ui_tabs():
     global loads_files_num
     num_of_imgs_per_page = int(opts.images_history_page_columns * opts.images_history_page_rows)
     loads_files_num = int(opts.images_history_pages_perload * num_of_imgs_per_page)
-    if cmd_opts.browse_all_images:
-        tabs_list.append(custom_tab_name)
+    tabs_list.append(custom_tab_name)
     with gr.Blocks(analytics_enabled=False) as images_history:
         with gr.Tabs() as tabs:
             for tab in tabs_list:
@@ -367,7 +366,7 @@ def on_ui_tabs():
         gr.Checkbox(opts.images_history_preload, elem_id="images_history_preload", visible=False)         
         gr.Textbox(",".join(tabs_list), elem_id="images_history_tabnames_list", visible=False)    
         
-    return (images_history , "Image Browser", "images_history"),
+    return (images_history , "Image Browser", "images_history")
 
 def on_ui_settings():
 
@@ -377,26 +376,6 @@ def on_ui_settings():
     shared.opts.add_option("images_history_page_rows", shared.OptionInfo(6, "Number of rows on the page", section=section))
     shared.opts.add_option("images_history_pages_perload", shared.OptionInfo(20, "Minimum number of pages per load", section=section))
 
-
-# options_templates.update(options_section(('inspiration', "Inspiration"), {
-#     "inspiration_dir": OptionInfo("inspiration", "Directory of inspiration", component_args=hide_dirs),
-#     "inspiration_max_samples": OptionInfo(4, "Maximum number of samples, used to determine which folders to skip when continue running the create script", gr.Slider, {"minimum": 1, "maximum": 20, "step": 1}),
-#     "inspiration_rows_num":  OptionInfo(4, "Rows of inspiration interface frame", gr.Slider, {"minimum": 4, "maximum": 16, "step": 1}),
-#     "inspiration_cols_num":  OptionInfo(8, "Columns of inspiration interface frame", gr.Slider, {"minimum": 4, "maximum": 16, "step": 1}),
-# }))
-
- #images history
-    # images_history_switch_dict = {
-    #     "fn": modules.generation_parameters_copypaste.connect_paste,
-    #     "t2i": txt2img_paste_fields,
-    #     "i2i": img2img_paste_fields
-    # }
-
-    # browser_interface = images_history.create_history_tabs(gr, opts, cmd_opts, wrap_gradio_call(modules.extras.run_pnginfo), images_history_switch_dict)
-    # inspiration_interface = inspiration.ui(gr, opts, txt2img_prompt, img2img_prompt)
-
-    #         (inspiration_interface, "Inspiration", "inspiration"),
-    #     (browser_interface , "Image Browser", "images_history"),
 
 script_callbacks.on_ui_settings(on_ui_settings)
 script_callbacks.on_ui_tabs(on_ui_tabs)
