@@ -17,12 +17,6 @@ var images_history_click_image = function(){
     images_history_set_image_info(this); 
 }
 
-function images_history_disabled_del(){
-    gradioApp().querySelectorAll(".images_history_del_button").forEach(function(btn){
-        btn.setAttribute('disabled','disabled');
-    }); 
-}
-
 function images_history_get_parent_by_class(item, class_name){
     var parent = item.parentElement;
     while(!parent.classList.contains(class_name)){
@@ -73,17 +67,16 @@ function images_history_set_image_info(button){
     var curr_idx = set_btn.getAttribute("img_index", index);  
     if (curr_idx != index) {
         set_btn.setAttribute("img_index", index);        
-        images_history_disabled_del();
     }
     set_btn.click();
     
 }
 
-function images_history_get_current_img(tabname, img_index, files){
+function images_history_get_current_img(tabname, img_index, page_index){
     return [
         tabname, 
-        gradioApp().getElementById(tabname + '_images_history_set_index').getAttribute("img_index"),         
-        files
+        gradioApp().getElementById(tabname + '_images_history_set_index').getAttribute("img_index"),       
+        page_index
     ];
 }
 
@@ -118,23 +111,16 @@ function images_history_delete(del_num, tabname, image_index){
         } 
         setTimeout(function(btn){btn.click()}, 30, btn);
     }
-    images_history_disabled_del();  
-   
+
 }
 
 function images_history_turnpage(tabname){
-    gradioApp().getElementById(tabname + '_images_history_del_button').setAttribute('disabled','disabled');
     var buttons = gradioApp().getElementById(tabname + '_images_history').querySelectorAll(".gallery-item");
     buttons.forEach(function(elem) {
         elem.style.display = 'block';
-    })   
+    });   
 }
 
-function images_history_enable_del_buttons(){
-    gradioApp().querySelectorAll(".images_history_del_button").forEach(function(btn){
-        btn.removeAttribute('disabled');
-    })
-}
 
 function images_history_init(){ 
     var tabnames = gradioApp().getElementById("images_history_tabnames_list")   
@@ -146,27 +132,21 @@ function images_history_init(){
             gradioApp().getElementById(tab + '_images_history_set_index').classList.add("images_history_set_index");
             gradioApp().getElementById(tab + '_images_history_del_button').classList.add("images_history_del_button");
             gradioApp().getElementById(tab + '_images_history_gallery').classList.add("images_history_gallery");  
-             gradioApp().getElementById(tab + "_images_history_start").setAttribute("style","padding:20px;font-size:25px");           
-        }
+            }
 
         //preload
+        var tab_btns = gradioApp().getElementById("images_history_tab").querySelector("div").querySelectorAll("button"); 
+        for (var i in images_history_tab_list){               
+            var tabname = images_history_tab_list[i]
+            tab_btns[i].setAttribute("tabname", tabname);
+            tab_btns[i].addEventListener('click', function(){
+                    gradioApp().getElementById(this.getAttribute("tabname") + "_images_history_renew_page").click();
+            });
+        }     
         if (gradioApp().getElementById("images_history_preload").querySelector("input").checked ){
-            var tabs_box = gradioApp().getElementById("tab_images_history").querySelector("div").querySelector("div").querySelector("div");
-            tabs_box.setAttribute("id", "images_history_tab");        
-            var tab_btns = tabs_box.querySelectorAll("button"); 
-            for (var i in images_history_tab_list){               
-                var tabname = images_history_tab_list[i]
-                tab_btns[i].setAttribute("tabname", tabname);
-                tab_btns[i].addEventListener('click', function(){
-                    var tabs_box = gradioApp().getElementById("images_history_tab");
-                    if (!tabs_box.classList.contains(this.getAttribute("tabname"))) {
-                        gradioApp().getElementById(this.getAttribute("tabname") + "_images_history_start").click();
-                        tabs_box.classList.add(this.getAttribute("tabname"))
-                    }                
-                });
-            }            
-            tab_btns[0].click()
-        }
+             setTimeout(function(){tab_btns[0].click()}, 100);
+        }   
+       
     } else {
         setTimeout(images_history_init, 500);
     } 
