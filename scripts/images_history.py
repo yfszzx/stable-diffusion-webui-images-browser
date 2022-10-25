@@ -184,7 +184,7 @@ def create_tab(tabname):
 
     if not custom_dir:
         d = dir_name.split("/")
-        dir_name = d[0]
+        dir_name = "/" if dir_name.startswith("/") else d[0]
         for p in d[1:]:
             dir_name = os.path.join(dir_name, p)
         if not os.path.exists(dir_name):
