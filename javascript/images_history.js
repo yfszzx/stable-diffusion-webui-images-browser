@@ -140,7 +140,11 @@ function images_history_init(){
             var tabname = images_history_tab_list[i]
             tab_btns[i].setAttribute("tabname", tabname);
             tab_btns[i].addEventListener('click', function(){
-                    gradioApp().getElementById(this.getAttribute("tabname") + "_images_history_renew_page").click();
+                 var tabs_box = gradioApp().getElementById("images_history_tab");
+                    if (!tabs_box.classList.contains(this.getAttribute("tabname"))) {
+                        gradioApp().getElementById(this.getAttribute("tabname") + "_images_history_renew_page").click();
+                        tabs_box.classList.add(this.getAttribute("tabname"))
+                    }         
             });
         }     
         if (gradioApp().getElementById("images_history_preload").querySelector("input").checked ){
