@@ -132,11 +132,14 @@ def show_image_info(tabname_box, num, page_index, filenames):
 
 def change_dir(img_dir, path_recorder, load_switch, img_path_history):
     warning = None
-    if not cmd_opts.administrator:        
-        head = os.path.realpath(".")
-        real_path = os.path.realpath(img_dir)
-        if len(real_path) < len(head) or real_path[:len(head)] != head:
-            warning = f"You have not permission to visit {img_dir}"  
+    try:
+        if not cmd_opts.administrator:        
+            head = os.path.realpath(".")
+            real_path = os.path.realpath(img_dir)
+            if len(real_path) < len(head) or real_path[:len(head)] != head:
+                warning = f"You have not permission to visit {img_dir}. If you want visit all directories, add command line argument option '--administrator', <a style='color:#990' href='https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings'>More detail here</a>"
+    except:
+        pass  
     if warning is None:
         try:
             if os.path.exists(img_dir):
@@ -287,10 +290,13 @@ def create_tab(tabname):
     modules.generation_parameters_copypaste.connect_paste(send_to_txt2img, modules.ui.txt2img_paste_fields, img_file_info, 'switch_to_txt2img')
     modules.generation_parameters_copypaste.connect_paste(send_to_img2img, modules.ui.img2img_paste_fields, img_file_info, 'switch_to_img2img_img2img')
     modules.generation_parameters_copypaste.connect_paste(send_to_inpaint, modules.ui.img2img_paste_fields, img_file_info, 'switch_to_img2img_inpaint')
-    send_to_img2img.click(lambda x: x, inputs=[img_file_name], outputs=[modules.ui.init_img_components["img2img"]])
-    send_to_inpaint.click(lambda x: x, inputs=[img_file_name], outputs=[modules.ui.init_img_components["inpaint"]])
-    send_to_extras.click(lambda x: x, inputs=[img_file_name], outputs=[modules.ui.init_img_components["extras"]])
-    send_to_extras.click(fn=None, _js="switch_to_extras", inputs=None, outputs=None)
+    try:
+        send_to_img2img.click(lambda x: x, inputs=[img_file_name], outputs=[modules.ui.init_img_components["img2img"]])
+        send_to_inpaint.click(lambda x: x, inputs=[img_file_name], outputs=[modules.ui.init_img_components["inpaint"]])
+        send_to_extras.click(lambda x: x, inputs=[img_file_name], outputs=[modules.ui.init_img_components["extras"]])
+        send_to_extras.click(fn=None, _js="switch_to_extras", inputs=None, outputs=None)
+    except:
+        pass
 
 def on_ui_tabs():
     global num_of_imgs_per_page
