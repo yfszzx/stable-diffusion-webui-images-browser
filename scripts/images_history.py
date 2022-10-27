@@ -210,8 +210,10 @@ def create_tab(tabname):
                         end_page = gr.Button('End Page') 
                     history_gallery = gr.Gallery(show_label=False, elem_id=tabname + "_images_history_gallery").style(grid=opts.images_history_page_columns)
                     with gr.Row() as delete_panel:
-                        delete_num = gr.Number(value=1, interactive=True, label="number of images to delete consecutively next")
-                        delete = gr.Button('Delete', elem_id=tabname + "_images_history_del_button")
+                        with gr.Column(scale=1):
+                            delete_num = gr.Number(value=1, interactive=True, label="delete next")
+                        with gr.Column(scale=3):
+                            delete = gr.Button('Delete', elem_id=tabname + "_images_history_del_button")
                         
                 with gr.Column(): 
                     with gr.Row():  
@@ -225,10 +227,10 @@ def create_tab(tabname):
                     with gr.Row(elem_id=tabname + "_images_history_button_panel") as button_panel:
                         if tabname != faverate_tab_name:
                             save_btn = gr.Button('Collect')
-                        send_to_txt2img = gr.Button('To txt2img')
-                        send_to_img2img = gr.Button('To img2img')
-                        send_to_inpaint = gr.Button('To inpaint')
-                        send_to_extras = gr.Button('To extras')
+                        try:
+                            send_to_buttons = modules.generation_parameters_copypaste.create_buttons(["txt2img", "img2img", "inpaint", "extras"])
+                        except:
+                            pass
                     with gr.Row():
                         collected_warning = gr.HTML()                       
                             
@@ -286,15 +288,8 @@ def create_tab(tabname):
    
     hidden.change(fn=modules.extras.run_pnginfo, inputs=[hidden], outputs=[info1, img_file_info, info2])
 
-
-    modules.generation_parameters_copypaste.connect_paste(send_to_txt2img, modules.ui.txt2img_paste_fields, img_file_info, 'switch_to_txt2img')
-    modules.generation_parameters_copypaste.connect_paste(send_to_img2img, modules.ui.img2img_paste_fields, img_file_info, 'switch_to_img2img_img2img')
-    modules.generation_parameters_copypaste.connect_paste(send_to_inpaint, modules.ui.img2img_paste_fields, img_file_info, 'switch_to_img2img_inpaint')
     try:
-        send_to_img2img.click(lambda x: x, inputs=[img_file_name], outputs=[modules.ui.init_img_components["img2img"]])
-        send_to_inpaint.click(lambda x: x, inputs=[img_file_name], outputs=[modules.ui.init_img_components["inpaint"]])
-        send_to_extras.click(lambda x: x, inputs=[img_file_name], outputs=[modules.ui.init_img_components["extras"]])
-        send_to_extras.click(fn=None, _js="switch_to_extras", inputs=None, outputs=None)
+        modules.generation_parameters_copypaste.bind_buttons(send_to_buttons, img_file_name, img_file_info)
     except:
         pass
 
@@ -325,5 +320,6 @@ script_callbacks.on_ui_settings(on_ui_settings)
 script_callbacks.on_ui_tabs(on_ui_tabs)
 
 #TODO:
-#send to remove seed
+#recycle bin
+#move by arrow key
 #generate info in txt
