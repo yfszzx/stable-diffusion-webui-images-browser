@@ -8,6 +8,7 @@ import modules.ui
 from modules.shared import opts, cmd_opts
 from modules import shared, scripts
 from modules import script_callbacks
+from pathlib import Path
 
 faverate_tab_name = "favorites"
 tabs_list = ["txt2img", "img2img", "extras", faverate_tab_name, "others"]
@@ -183,16 +184,13 @@ def create_tab(tabname):
                 path = f.readline().rstrip("\n")
                 while len(path) > 0:
                     path_recorder.append(path)
-                    path = f.readline().rstrip("\n")        
+                    path = f.readline().rstrip("\n")
 
     if not custom_dir:
-        d = dir_name.split("/")
-        dir_name = "/" if dir_name.startswith("/") else d[0]
-        for p in d[1:]:
-            dir_name = os.path.join(dir_name, p)
+        dir_name = str(Path(dir_name))
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
-         
+
     with gr.Row(visible= custom_dir): 
         img_path = gr.Textbox(dir_name, label="Images directory", placeholder="Input images directory", interactive=custom_dir)  
         img_path_history = gr.Dropdown(path_recorder)
