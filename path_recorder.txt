@@ -1,4 +1,1 @@
-f:\hentai
-outputs
-outputs\txt2img-images
-log
+
