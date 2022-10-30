@@ -44,7 +44,7 @@ def reduplicative_file_move(src, dst):
 def save_image(file_name):
     if file_name is not None and os.path.exists(file_name):
         reduplicative_file_move(file_name, opts.outdir_save)
-        return "<div style='color:#999'>Added to faverites</div>"
+        return "<div style='color:#999'>Added to favorites</div>"
 
 def delete_image(delete_num, name, filenames, image_index, visible_num):
     if name == "":
