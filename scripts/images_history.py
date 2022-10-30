@@ -44,7 +44,9 @@ def reduplicative_file_move(src, dst):
 def save_image(file_name):
     if file_name is not None and os.path.exists(file_name):
         reduplicative_file_move(file_name, opts.outdir_save)
-        return "<div style='color:#999'>Added to Favorites</div>"
+        return "<div style='color:#999'>Moved to Favorites</div>"
+    else
+        return "<div style='color:#999'>Image not found</div>"
 
 def delete_image(delete_num, name, filenames, image_index, visible_num):
     if name == "":
@@ -70,7 +72,7 @@ def delete_image(delete_num, name, filenames, image_index, visible_num):
                     if os.path.exists(txt_file):
                         os.remove(txt_file)
                 else:
-                    print(f"Not exists file {name}")
+                    print(f"File does not exist {name}")
             else:
                 new_file_list.append(name)
             i += 1
@@ -149,7 +151,7 @@ def change_dir(img_dir, path_recorder, load_switch, img_path_history):
                 except:
                     warning = f"'{img_dir} is not a directory"
             else:
-                warning = "The directory is not exist"
+                warning = "The directory does not exist"
         except:
             warning = "The format of the directory is incorrect"   
 
@@ -224,7 +226,7 @@ def create_tab(tabname):
                             img_file_time= gr.HTML()
                     with gr.Row(elem_id=tabname + "_images_history_button_panel") as button_panel:
                         if tabname != faverate_tab_name:
-                            save_btn = gr.Button('Collect')
+                            save_btn = gr.Button('Move to Favorites')
                         try:
                             send_to_buttons = modules.generation_parameters_copypaste.create_buttons(["txt2img", "img2img", "inpaint", "extras"])
                         except:
