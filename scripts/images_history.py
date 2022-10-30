@@ -10,8 +10,8 @@ from modules import shared, scripts
 from modules import script_callbacks
 from pathlib import Path
 
-faverate_tab_name = "favorites"
-tabs_list = ["txt2img", "img2img", "extras", faverate_tab_name, "others"]
+faverate_tab_name = "Favorites"
+tabs_list = ["txt2img", "img2img", "Extras", faverate_tab_name, "Others"]
 num_of_imgs_per_page = 0
 loads_files_num = 0
 path_recorder_filename = os.path.join(scripts.basedir(), "path_recorder.txt")
@@ -44,7 +44,7 @@ def reduplicative_file_move(src, dst):
 def save_image(file_name):
     if file_name is not None and os.path.exists(file_name):
         reduplicative_file_move(file_name, opts.outdir_save)
-        return "<div style='color:#999'>Added to favorites</div>"
+        return "<div style='color:#999'>Added to Favorites</div>"
 
 def delete_image(delete_num, name, filenames, image_index, visible_num):
     if name == "":
@@ -172,7 +172,7 @@ def create_tab(tabname):
         dir_name = opts.outdir_txt2img_samples
     elif tabname == "img2img":
         dir_name = opts.outdir_img2img_samples
-    elif tabname == "extras":
+    elif tabname == "Extras":
         dir_name = opts.outdir_extras_samples
     elif tabname == faverate_tab_name:
         dir_name = opts.outdir_save
