@@ -98,7 +98,7 @@ def get_all_images(dir_name, sort_by, keyword):
     filenames = traverse_all_files(dir_name, filenames)  
     keyword = keyword.strip(" ")
     if len(keyword) != 0:        
-        filenames = [x for x in filenames if keyword in x]
+        filenames = [x for x in filenames if keyword.lower() in x.lower()]
     total_num = len(filenames) 
     if sort_by == "date":
         filenames = [(os.path.getmtime(file), file) for file in filenames ]
