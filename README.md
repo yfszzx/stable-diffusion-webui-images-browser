@@ -1,4 +1,4 @@
-# stable-diffusion-webui-images_browser
+# stable-diffusion-webui-images-browser
 
 This an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
 
