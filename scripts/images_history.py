@@ -65,8 +65,9 @@ def delete_image(delete_num, name, filenames, image_index, visible_num):
                     if visible_num == image_index:
                         new_file_list.append(name)
                         i += 1
-                        continue                    
-                    print(f"Delete file {name}")
+                        continue
+                    if opts.images_delete_message:
+                        print(f"Deleting file {name}")
                     os.remove(name)
                     visible_num -= 1
                     txt_file = os.path.splitext(name)[0] + ".txt"
@@ -80,6 +81,8 @@ def delete_image(delete_num, name, filenames, image_index, visible_num):
     return new_file_list, 1, visible_num
 
 def traverse_all_files(curr_path, image_list) -> List[Tuple[str, os.stat_result]]:
+    if curr_path == "":
+        return image_list
     f_list = [(os.path.join(curr_path, entry.name), entry.stat()) for entry in os.scandir(curr_path)]
     for f_info in f_list:
         fname, fstat = f_info
@@ -155,9 +158,10 @@ def change_dir(img_dir, path_recorder, load_switch, img_path_history):
             path_recorder.append(img_dir)
         if os.path.exists(path_recorder_filename):
             os.remove(path_recorder_filename)
-        with open(path_recorder_filename, "a") as f:
-            for x in path_recorder:
-                f.write(x + "\n")
+        if opts.images_record_paths:
+            with open(path_recorder_filename, "a") as f:
+                for x in path_recorder:
+                    f.write(x + "\n")
         return "", gr.update(visible=True), gr.Dropdown.update(choices=path_recorder, value=img_dir), path_recorder, img_dir
     else:
         return warning, gr.update(visible=False), img_path_history, path_recorder, load_switch
@@ -310,6 +314,8 @@ def on_ui_tabs():
 def on_ui_settings():
     section = ('images-history', "Images Browser")
     shared.opts.add_option("images_history_preload", shared.OptionInfo(False, "Preload images at startup", section=section))
+    shared.opts.add_option("images_record_paths", shared.OptionInfo(True, "Record accessable images directories", section=section))
+    shared.opts.add_option("images_delete_message", shared.OptionInfo(True, "Print image deletion messages to the console", section=section))
     shared.opts.add_option("images_history_page_columns", shared.OptionInfo(6, "Number of columns on the page", section=section))
     shared.opts.add_option("images_history_page_rows", shared.OptionInfo(6, "Number of rows on the page", section=section))
     shared.opts.add_option("images_history_pages_perload", shared.OptionInfo(20, "Minimum number of pages per load", section=section))
