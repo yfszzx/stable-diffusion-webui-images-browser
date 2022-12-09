@@ -173,20 +173,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 var buttons = gradioApp().querySelectorAll('#' + tabname + '_images_history .gallery-item');
                 buttons.forEach(function(bnt){    
                     bnt.addEventListener('click', images_history_click_image, true);
-                    // bnt.addEventListener('onkeydown',images_history_click_image,true)
-                    // document.addEventListener('onkeydown', ((b) => {
-                    //     return images_history_click_image.bind(b)
-                    // })(bnt));
                     document.onkeyup = function(e){
                         clearTimeout(timer)
                         timer = setTimeout(() => {
-                            console.log(e.code)
                             let tab = gradioApp().getElementById("tab_images_history").getElementsByClassName("bg-white px-4 pb-2 pt-1.5 rounded-t-lg border-gray-200 -mb-[2px] border-2 border-b-0")[0].innerText
-                            console.log("tab",tab)
-
                             bnt = gradioApp().getElementById(tab+"_images_history_gallery").getElementsByClassName('gallery-item !flex-none !h-9 !w-9 transition-all duration-75 !ring-2 !ring-orange-500 hover:!ring-orange-500 svelte-1g9btlg')[0]
-                            console.log("bnt",bnt)
-                            console.log("gradioApp",gradioApp())
                             images_history_click_image.call(bnt)
                         },500)
                       
