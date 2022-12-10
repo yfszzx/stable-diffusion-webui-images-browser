@@ -1,4 +1,6 @@
 var images_history_click_image = function(){
+    console.log("in images_history_click_image !")
+    console.log(this.classList)
     if (!this.classList.contains("transform")){        
         var gallery = images_history_get_parent_by_class(this, "images_history_cantainor");
         var buttons = gallery.querySelectorAll(".gallery-item");
@@ -73,6 +75,9 @@ function images_history_set_image_info(button){
 }
 
 function images_history_get_current_img(tabname, img_index, page_index){
+    console.log("tabName",tabname)
+    console.log("img_index",img_index)
+    console.log(tabname + '_images_history_set_index')
     return [
         tabname, 
         gradioApp().getElementById(tabname + '_images_history_set_index').getAttribute("img_index"),       
@@ -156,16 +161,27 @@ function images_history_init(){
     } 
 }
 
+let timer
 var images_history_tab_list = "";
 setTimeout(images_history_init, 500);
 document.addEventListener("DOMContentLoaded", function() {
     var mutationObserver = new MutationObserver(function(m){
         if (images_history_tab_list != ""){
+
             for (var i in images_history_tab_list ){
                 let tabname = images_history_tab_list[i]
                 var buttons = gradioApp().querySelectorAll('#' + tabname + '_images_history .gallery-item');
                 buttons.forEach(function(bnt){    
                     bnt.addEventListener('click', images_history_click_image, true);
+                    document.onkeyup = function(e){
+                        clearTimeout(timer)
+                        timer = setTimeout(() => {
+                            let tab = gradioApp().getElementById("tab_images_history").getElementsByClassName("bg-white px-4 pb-2 pt-1.5 rounded-t-lg border-gray-200 -mb-[2px] border-2 border-b-0")[0].innerText
+                            bnt = gradioApp().getElementById(tab+"_images_history_gallery").getElementsByClassName('gallery-item !flex-none !h-9 !w-9 transition-all duration-75 !ring-2 !ring-orange-500 hover:!ring-orange-500 svelte-1g9btlg')[0]
+                            images_history_click_image.call(bnt)
+                        },500)
+                      
+                    }
                 });
 
                 var cls_btn = gradioApp().getElementById(tabname + '_images_history_gallery').querySelector("svg");
@@ -180,5 +196,8 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     mutationObserver.observe(gradioApp(), { childList:true, subtree:true });
 });
+
+
+
 
 
