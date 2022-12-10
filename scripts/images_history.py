@@ -292,7 +292,7 @@ def create_tab(tabname):
     hidden.change(fn=modules.extras.run_pnginfo, inputs=[hidden], outputs=[info1, img_file_info, info2])
 
     try:
-        modules.generation_parameters_copypaste.bind_buttons(send_to_buttons, img_file_name, img_file_info)
+        modules.generation_parameters_copypaste.bind_buttons(send_to_buttons, history_gallery, img_file_info)
     except:
         pass
 
