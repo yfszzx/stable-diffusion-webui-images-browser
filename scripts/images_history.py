@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 import stat
+import random
 import gradio as gr
 import modules.extras
 import modules.ui
@@ -11,8 +12,8 @@ from modules import script_callbacks
 from pathlib import Path
 from typing import List, Tuple
 
-faverate_tab_name = "Favorites"
-tabs_list = ["txt2img", "img2img", "txt2img-grids", "img2img-grids", "Extras", faverate_tab_name, "Others"] #txt2img-grids and img2img-grids added by HaylockGrant
+favorite_tab_name = "Favorites"
+tabs_list = ["txt2img", "img2img", "txt2img-grids", "img2img-grids", "Extras", favorite_tab_name, "Others"] #txt2img-grids and img2img-grids added by HaylockGrant
 num_of_imgs_per_page = 0
 loads_files_num = 0
 path_recorder_filename = os.path.join(scripts.basedir(), "path_recorder.txt")
@@ -102,6 +103,8 @@ def get_all_images(dir_name, sort_by, keyword):
         fileinfos = sorted(fileinfos, key=lambda x: -x[1].st_mtime)
     elif sort_by == "path name":
         fileinfos = sorted(fileinfos)
+    elif sort_by == "random":
+        random.shuffle(fileinfos)
 
     filenames = [finfo[0] for finfo in fileinfos]
     return filenames
@@ -179,7 +182,7 @@ def create_tab(tabname):
         dir_name = opts.outdir_img2img_grids
     elif tabname == "Extras":
         dir_name = opts.outdir_extras_samples
-    elif tabname == faverate_tab_name:
+    elif tabname == favorite_tab_name:
         dir_name = opts.outdir_save
     else:
         custom_dir = True
@@ -220,7 +223,7 @@ def create_tab(tabname):
                         
                 with gr.Column(): 
                     with gr.Row():  
-                        sort_by = gr.Radio(value="date", choices=["path name", "date"], label="sort by")   
+                        sort_by = gr.Radio(value="date", choices=["path name", "date", "random"], label="sort by")   
                         keyword = gr.Textbox(value="", label="keyword")                 
                     with gr.Row():
                         with gr.Column():
@@ -228,7 +231,7 @@ def create_tab(tabname):
                             img_file_name = gr.Textbox(value="", label="File Name", interactive=False)
                             img_file_time= gr.HTML()
                     with gr.Row(elem_id=tabname + "_images_history_button_panel") as button_panel:
-                        if tabname != faverate_tab_name:
+                        if tabname != favorite_tab_name:
                             save_btn = gr.Button('Move to favorites')
                         try:
                             send_to_buttons = modules.generation_parameters_copypaste.create_buttons(["txt2img", "img2img", "inpaint", "extras"])
@@ -262,7 +265,7 @@ def create_tab(tabname):
     #delete
     delete.click(delete_image, inputs=[delete_num, img_file_name, filenames, image_index, visible_img_num], outputs=[filenames, delete_num, visible_img_num])
     delete.click(fn=None, _js="images_history_delete", inputs=[delete_num, tabname_box, image_index], outputs=None) 
-    if tabname != faverate_tab_name: 
+    if tabname != favorite_tab_name: 
         save_btn.click(save_image, inputs=[img_file_name], outputs=[collected_warning])     
 
     #turn page
