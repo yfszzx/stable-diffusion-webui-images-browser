@@ -110,6 +110,12 @@ def get_all_images(dir_name, sort_by, keyword):
     return filenames
 
 def get_image_page(img_path, page_index, filenames, keyword, sort_by):
+    if not cmd_opts.administrator:
+        head = os.path.realpath(".")
+        real_path = os.path.realpath(img_path)
+        if len(real_path) < len(head) or real_path[:len(head)] != head:
+            warning = f"You have not permission to visit {img_path}. If you want visit all directories, add command line argument option '--administrator', <a style='color:#990' href='https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings'>More detail here</a>"
+            return None, 0, None, "", "", "", None, None, warning
     if page_index == 1 or page_index == 0 or len(filenames) == 0:
         filenames = get_all_images(img_path, sort_by, keyword)
     page_index = int(page_index)
@@ -240,7 +246,7 @@ def create_tab(tabname):
                     with gr.Row():
                         collected_warning = gr.HTML()                       
                             
-                    # hiden items
+                    # hidden items
                     with gr.Row(visible=False): 
                         renew_page = gr.Button("Renew Page", elem_id=tabname + "_images_history_renew_page")
                         visible_img_num = gr.Number()                     
