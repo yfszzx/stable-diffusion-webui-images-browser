@@ -38,10 +38,16 @@ def reduplicative_file_move(src, dst):
     name = os.path.basename(src)
     save_name = os.path.join(dst, name)
     if not os.path.exists(save_name):
-        shutil.move(src, dst)
+        if opts.images_copy_image:
+            shutil.copy2(src, dst)
+        else:
+            shutil.move(src, dst)
     else:
         name = same_name_file(name, dst)
-        shutil.move(src, os.path.join(dst, name))
+        if opts.images_copy_image:
+            shutil.copy2(src, os.path.join(dst, name))
+        else:
+            shutil.move(src, os.path.join(dst, name))
 
 def save_image(file_name):
     if file_name is not None and os.path.exists(file_name):
@@ -175,6 +181,9 @@ def change_dir(img_dir, path_recorder, load_switch, img_path_history):
     else:
         return warning, gr.update(visible=False), img_path_history, path_recorder, load_switch
 
+def update_move_text(unused):
+    return f'{"Move" if not opts.images_copy_image else "Copy"} to favorites'
+
 def create_tab(tabname):
     custom_dir = False
     path_recorder = []
@@ -238,7 +247,7 @@ def create_tab(tabname):
                             img_file_time= gr.HTML()
                     with gr.Row(elem_id=tabname + "_images_history_button_panel") as button_panel:
                         if tabname != favorite_tab_name:
-                            save_btn = gr.Button('Move to favorites')
+                            save_btn = gr.Button(f'{"Move" if not opts.images_copy_image else "Copy"} to favorites')
                         try:
                             send_to_buttons = modules.generation_parameters_copypaste.create_buttons(["txt2img", "img2img", "inpaint", "extras"])
                         except:
@@ -272,7 +281,8 @@ def create_tab(tabname):
     delete.click(delete_image, inputs=[delete_num, img_file_name, filenames, image_index, visible_img_num], outputs=[filenames, delete_num, visible_img_num])
     delete.click(fn=None, _js="images_history_delete", inputs=[delete_num, tabname_box, image_index], outputs=None) 
     if tabname != favorite_tab_name: 
-        save_btn.click(save_image, inputs=[img_file_name], outputs=[collected_warning])     
+        save_btn.click(save_image, inputs=[img_file_name], outputs=[collected_warning])
+        img_file_name.change(fn=update_move_text, inputs=[img_file_name], outputs=[save_btn])
 
     #turn page
     first_page.click(lambda s:(1, -s) , inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
@@ -324,6 +334,7 @@ def on_ui_settings():
     section = ('images-history', "Images Browser")
     shared.opts.add_option("images_history_preload", shared.OptionInfo(False, "Preload images at startup", section=section))
     shared.opts.add_option("images_record_paths", shared.OptionInfo(True, "Record accessable images directories", section=section))
+    shared.opts.add_option("images_copy_image", shared.OptionInfo(False, "Move to favorites button copies instead of moving", section=section))
     shared.opts.add_option("images_delete_message", shared.OptionInfo(True, "Print image deletion messages to the console", section=section))
     shared.opts.add_option("images_history_page_columns", shared.OptionInfo(6, "Number of columns on the page", section=section))
     shared.opts.add_option("images_history_page_rows", shared.OptionInfo(6, "Number of rows on the page", section=section))
