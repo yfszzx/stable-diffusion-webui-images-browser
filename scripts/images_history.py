@@ -136,7 +136,7 @@ def get_all_images(dir_name, sort_by, keyword, prompt, negative_prompt, all_meta
                     md_settings_prompt_text = md_text[md_settings_index:].strip()
                 if len(md_prompt_text) == 0:
                     md_prompt_text = md_text.strip()
-                if (len(prompt) == 0 or prompt in md_prompt_text) and (len(negative_prompt) == 0 or negative_prompt in md_negative_prompt_text) and (len(all_metadata) == 0 or all_metadata in md_text):
+                if (len(prompt) == 0 or prompt.lower() in md_prompt_text.lower()) and (len(negative_prompt) == 0 or negative_prompt.lower() in md_negative_prompt_text.lower()) and (len(all_metadata) == 0 or all_metadata.lower() in md_text.lower()):
                     unique_fileinfos.add(fileinfo)
     if has_search_filter:
         fileinfos = list(unique_fileinfos)
