@@ -94,12 +94,12 @@ def traverse_all_files(curr_path, image_list) -> List[Tuple[str, os.stat_result]
     return image_list
 
 
-def get_all_images(dir_name, sort_by, keyword, prompt, negative_prompt, all_metadata):
+def get_all_images(dir_name, sort_by, keyword, prompt_filter, negative_prompt_filter, full_prompt_filter):
     fileinfos = traverse_all_files(dir_name, [])
     keyword = keyword.strip()
-    prompt = prompt.strip()
-    negative_prompt = negative_prompt.strip()
-    all_metadata = all_metadata.strip()
+    prompt_filter = prompt_filter.strip()
+    negative_prompt_filter = negative_prompt_filter.strip()
+    full_prompt_filter = full_prompt_filter.strip()
     has_search_filter = False
     unique_fileinfos = set()
     if len(keyword) != 0:
@@ -108,7 +108,7 @@ def get_all_images(dir_name, sort_by, keyword, prompt, negative_prompt, all_meta
             filename = fileinfo[0]
             if keyword.lower() in filename.lower():
                 unique_fileinfos.add(fileinfo)
-    if len(prompt) > 0 or len(negative_prompt) > 0 or len(all_metadata) > 0:
+    if len(prompt_filter) > 0 or len(negative_prompt_filter) > 0 or len(full_prompt_filter) > 0:
         has_search_filter = True
         for fileinfo in fileinfos:
             filename = fileinfo[0]
@@ -136,7 +136,7 @@ def get_all_images(dir_name, sort_by, keyword, prompt, negative_prompt, all_meta
                     md_settings_prompt_text = md_text[md_settings_index:].strip()
                 if len(md_prompt_text) == 0:
                     md_prompt_text = md_text.strip()
-                if (len(prompt) == 0 or prompt.lower() in md_prompt_text.lower()) and (len(negative_prompt) == 0 or negative_prompt.lower() in md_negative_prompt_text.lower()) and (len(all_metadata) == 0 or all_metadata.lower() in md_text.lower()):
+                if (len(prompt_filter) == 0 or prompt_filter.lower() in md_prompt_text.lower()) and (len(negative_prompt_filter) == 0 or negative_prompt_filter.lower() in md_negative_prompt_text.lower()) and (len(full_prompt_filter) == 0 or full_prompt_filter.lower() in md_text.lower()):
                     unique_fileinfos.add(fileinfo)
     if has_search_filter:
         fileinfos = list(unique_fileinfos)
@@ -148,9 +148,9 @@ def get_all_images(dir_name, sort_by, keyword, prompt, negative_prompt, all_meta
     filenames = [finfo[0] for finfo in fileinfos]
     return filenames
 
-def get_image_page(img_path, page_index, filenames, keyword, sort_by, prompt, negative_prompt, all_metadata):
+def get_image_page(img_path, page_index, filenames, keyword, sort_by, prompt_filter, negative_prompt_filter, full_prompt_filter):
     if page_index == 1 or page_index == 0 or len(filenames) == 0:
-        filenames = get_all_images(img_path, sort_by, keyword, prompt, negative_prompt, all_metadata)
+        filenames = get_all_images(img_path, sort_by, keyword, prompt_filter, negative_prompt_filter, full_prompt_filter)
     page_index = int(page_index)
     length = len(filenames)
     max_page_index = length // num_of_imgs_per_page + 1
@@ -265,10 +265,10 @@ def create_tab(tabname):
                         sort_by = gr.Radio(value="date", choices=["path name", "date"], label="sort by")   
                         keyword = gr.Textbox(value="", label="keyword")                 
                     with gr.Row():  
-                        prompt = gr.Textbox(value="", label="prompt")
-                        negative_prompt = gr.Textbox(value="", label="negative prompt")
+                        prompt_filter = gr.Textbox(value="", label="prompt (SLOW)")
+                        negative_prompt_filter = gr.Textbox(value="", label="negative prompt (SLOW)")
                     with gr.Row():  
-                        all_metadata = gr.Textbox(value="", label="prompt, negative prompt, or settings")
+                        full_prompt_filter = gr.Textbox(value="", label="prompt, negative prompt, or settings (SLOW)")
                     with gr.Row():
                         with gr.Column():
                             img_file_info = gr.Textbox(label="Generate Info", interactive=False, lines=6)
@@ -320,15 +320,15 @@ def create_tab(tabname):
     load_switch.change(lambda s:(1, -s), inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
     keyword.submit(lambda s:(1, -s), inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
     sort_by.change(lambda s:(1, -s), inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
-    prompt.submit(lambda s:(1, -s), inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
-    negative_prompt.submit(lambda s:(1, -s), inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
-    all_metadata.submit(lambda s:(1, -s), inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
+    prompt_filter.submit(lambda s:(1, -s), inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
+    negative_prompt_filter.submit(lambda s:(1, -s), inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
+    full_prompt_filter.submit(lambda s:(1, -s), inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
     page_index.submit(lambda s: -s, inputs=[turn_page_switch], outputs=[turn_page_switch])
     renew_page.click(lambda s: -s, inputs=[turn_page_switch], outputs=[turn_page_switch])
 
     turn_page_switch.change(
         fn=get_image_page, 
-        inputs=[img_path, page_index, filenames, keyword, sort_by, prompt, negative_prompt, all_metadata], 
+        inputs=[img_path, page_index, filenames, keyword, sort_by, prompt_filter, negative_prompt_filter, full_prompt_filter], 
         outputs=[filenames, page_index, history_gallery, img_file_name, img_file_time, img_file_info, visible_img_num, warning_box]
     )
     turn_page_switch.change(fn=None, inputs=[tabname_box], outputs=None, _js="images_history_turnpage")
