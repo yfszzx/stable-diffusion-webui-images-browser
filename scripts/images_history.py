@@ -8,6 +8,7 @@ import modules.ui
 from modules.shared import opts, cmd_opts
 from modules import shared, scripts
 from modules import script_callbacks
+from PIL import Image
 from pathlib import Path
 from typing import List, Tuple
 
@@ -102,9 +103,21 @@ def get_all_images(dir_name, sort_by, keyword):
         fileinfos = sorted(fileinfos, key=lambda x: -x[1].st_mtime)
     elif sort_by == "path name":
         fileinfos = sorted(fileinfos)
+    elif sort_by == "aesthetic_score":
+        fileinfos = sorted(fileinfos, key=lambda x: -get_image_aesthetic_score(x[0]))
 
     filenames = [finfo[0] for finfo in fileinfos]
     return filenames
+
+def get_image_aesthetic_score(img_path):
+    if not os.path.exists(img_path):
+        return 0
+    img = Image.open(img_path)
+
+    try:
+        return float(img.info['aesthetic_score'])
+    except KeyError:
+        return 0
 
 def get_image_page(img_path, page_index, filenames, keyword, sort_by):
     if page_index == 1 or page_index == 0 or len(filenames) == 0:
@@ -220,7 +233,7 @@ def create_tab(tabname):
                         
                 with gr.Column(): 
                     with gr.Row():  
-                        sort_by = gr.Radio(value="date", choices=["path name", "date"], label="sort by")   
+                        sort_by = gr.Radio(value="date", choices=["path name", "date", "aesthetic_score"], label="sort by")   
                         keyword = gr.Textbox(value="", label="keyword")                 
                     with gr.Row():
                         with gr.Column():
