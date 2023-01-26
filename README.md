@@ -1,14 +1,17 @@
-# stable-diffusion-webui-images-browser
+## stable-diffusion-webui-images-browser
 
-This an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
+A custom extension for [AUTOMATIC1111/stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
 
-This an images browser for browsing past generated pictures, view their generated infomations, send the prompt to txt2img or img2img, collect images to your "favorites" folder, delete the images you no longer need, and you can also browse images in any folders on your computer.
-![image](https://s6.jpg.cm/2022/10/24/PJjuZt.png)
+This is an image browser for browsing past generated pictures, view their generated informations, send that information to txt2img, img2img and others, collect images to your "favorites" folder and delete the images you no longer need.
 
-go to the directory \<stable-diffusion-webui project path\>/extensions and run command to install:
+## Installation
 
-`git clone https://github.com/yfszzx/stable-diffusion-webui-images-browser `
+The extension can be installed directly from within the **Extensions** tab within the Webui.
 
-and restart your stable-diffusion-webui, then you can see the new tab "Images Browser"
+You can also install it manually by running the following command from within the webui directory:
 
-[See here for more install details](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Extensions)
+	git clone https://github.com/AlUlkesh/stable-diffusion-webui-images-browser/ extensions/stable-diffusion-webui-images-browser
+
+## Credit
+
+Credit goes above all to the original maintainer of this extension: https://github.com/yfszzx/stable-diffusion-webui-images-browser

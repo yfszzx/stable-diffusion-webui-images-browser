@@ -130,9 +130,9 @@ def get_image_aesthetic_score(img_path):
 
 def get_image_page(img_path, page_index, filenames, keyword, sort_by):
     if not cmd_opts.administrator:
-        head = os.path.realpath(".")
-        real_path = os.path.realpath(img_path)
-        if len(real_path) < len(head) or real_path[:len(head)] != head:
+        head = os.path.abspath(".")
+        abs_path = os.path.abspath(img_path)
+        if len(abs_path) < len(head) or abs_path[:len(head)] != head:
             warning = f"You have not permission to visit {img_path}. If you want visit all directories, add command line argument option '--administrator', <a style='color:#990' href='https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings'>More detail here</a>"
             return None, 0, None, "", "", "", None, None, warning
     if page_index == 1 or page_index == 0 or len(filenames) == 0:
@@ -163,9 +163,9 @@ def change_dir(img_dir, path_recorder, load_switch, img_path_history):
     warning = None
     try:
         if not cmd_opts.administrator:        
-            head = os.path.realpath(".")
-            real_path = os.path.realpath(img_dir)
-            if len(real_path) < len(head) or real_path[:len(head)] != head:
+            head = os.path.abspath(".")
+            abs_path = os.path.abspath(img_dir)
+            if len(abs_path) < len(head) or abs_path[:len(head)] != head:
                 warning = f"You have not permission to visit {img_dir}. If you want visit all directories, add command line argument option '--administrator', <a style='color:#990' href='https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings'>More detail here</a>"
     except:
         pass  
