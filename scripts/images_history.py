@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 import stat
+import random
 import gradio as gr
 import modules.extras
 import modules.ui
@@ -12,8 +13,8 @@ from PIL import Image
 from pathlib import Path
 from typing import List, Tuple
 
-faverate_tab_name = "Favorites"
-tabs_list = ["txt2img", "img2img", "txt2img-grids", "img2img-grids", "Extras", faverate_tab_name, "Others"] #txt2img-grids and img2img-grids added by HaylockGrant
+favorite_tab_name = "Favorites"
+tabs_list = ["txt2img", "img2img", "txt2img-grids", "img2img-grids", "Extras", favorite_tab_name, "Others"] #txt2img-grids and img2img-grids added by HaylockGrant
 num_of_imgs_per_page = 0
 loads_files_num = 0
 path_recorder_filename = os.path.join(scripts.basedir(), "path_recorder.txt")
@@ -38,10 +39,16 @@ def reduplicative_file_move(src, dst):
     name = os.path.basename(src)
     save_name = os.path.join(dst, name)
     if not os.path.exists(save_name):
-        shutil.move(src, dst)
+        if opts.images_copy_image:
+            shutil.copy2(src, dst)
+        else:
+            shutil.move(src, dst)
     else:
         name = same_name_file(name, dst)
-        shutil.move(src, os.path.join(dst, name))
+        if opts.images_copy_image:
+            shutil.copy2(src, os.path.join(dst, name))
+        else:
+            shutil.move(src, os.path.join(dst, name))
 
 def save_image(file_name):
     if file_name is not None and os.path.exists(file_name):
@@ -105,6 +112,8 @@ def get_all_images(dir_name, sort_by, keyword):
         fileinfos = sorted(fileinfos)
     elif sort_by == "aesthetic_score":
         fileinfos = sorted(fileinfos, key=lambda x: -get_image_aesthetic_score(x[0]))
+    elif sort_by == "random":
+        random.shuffle(fileinfos)
 
     filenames = [finfo[0] for finfo in fileinfos]
     return filenames
@@ -120,6 +129,12 @@ def get_image_aesthetic_score(img_path):
         return 0
 
 def get_image_page(img_path, page_index, filenames, keyword, sort_by):
+    if not cmd_opts.administrator:
+        head = os.path.realpath(".")
+        real_path = os.path.realpath(img_path)
+        if len(real_path) < len(head) or real_path[:len(head)] != head:
+            warning = f"You have not permission to visit {img_path}. If you want visit all directories, add command line argument option '--administrator', <a style='color:#990' href='https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings'>More detail here</a>"
+            return None, 0, None, "", "", "", None, None, warning
     if page_index == 1 or page_index == 0 or len(filenames) == 0:
         filenames = get_all_images(img_path, sort_by, keyword)
     page_index = int(page_index)
@@ -179,6 +194,9 @@ def change_dir(img_dir, path_recorder, load_switch, img_path_history):
     else:
         return warning, gr.update(visible=False), img_path_history, path_recorder, load_switch
 
+def update_move_text(unused):
+    return f'{"Move" if not opts.images_copy_image else "Copy"} to favorites'
+
 def create_tab(tabname):
     custom_dir = False
     path_recorder = []
@@ -192,7 +210,7 @@ def create_tab(tabname):
         dir_name = opts.outdir_img2img_grids
     elif tabname == "Extras":
         dir_name = opts.outdir_extras_samples
-    elif tabname == faverate_tab_name:
+    elif tabname == favorite_tab_name:
         dir_name = opts.outdir_save
     else:
         custom_dir = True
@@ -233,7 +251,7 @@ def create_tab(tabname):
                         
                 with gr.Column(): 
                     with gr.Row():  
-                        sort_by = gr.Radio(value="date", choices=["path name", "date", "aesthetic_score"], label="sort by")   
+                        sort_by = gr.Radio(value="date", choices=["path name", "date", "aesthetic_score", "random"], label="sort by")   
                         keyword = gr.Textbox(value="", label="keyword")                 
                     with gr.Row():
                         with gr.Column():
@@ -241,8 +259,8 @@ def create_tab(tabname):
                             img_file_name = gr.Textbox(value="", label="File Name", interactive=False)
                             img_file_time= gr.HTML()
                     with gr.Row(elem_id=tabname + "_images_history_button_panel") as button_panel:
-                        if tabname != faverate_tab_name:
-                            save_btn = gr.Button('Move to favorites')
+                        if tabname != favorite_tab_name:
+                            save_btn = gr.Button(f'{"Move" if not opts.images_copy_image else "Copy"} to favorites')
                         try:
                             send_to_buttons = modules.generation_parameters_copypaste.create_buttons(["txt2img", "img2img", "inpaint", "extras"])
                         except:
@@ -250,7 +268,7 @@ def create_tab(tabname):
                     with gr.Row():
                         collected_warning = gr.HTML()                       
                             
-                    # hiden items
+                    # hidden items
                     with gr.Row(visible=False): 
                         renew_page = gr.Button("Renew Page", elem_id=tabname + "_images_history_renew_page")
                         visible_img_num = gr.Number()                     
@@ -275,8 +293,9 @@ def create_tab(tabname):
     #delete
     delete.click(delete_image, inputs=[delete_num, img_file_name, filenames, image_index, visible_img_num], outputs=[filenames, delete_num, visible_img_num])
     delete.click(fn=None, _js="images_history_delete", inputs=[delete_num, tabname_box, image_index], outputs=None) 
-    if tabname != faverate_tab_name: 
-        save_btn.click(save_image, inputs=[img_file_name], outputs=[collected_warning])     
+    if tabname != favorite_tab_name: 
+        save_btn.click(save_image, inputs=[img_file_name], outputs=[collected_warning])
+        img_file_name.change(fn=update_move_text, inputs=[img_file_name], outputs=[save_btn])
 
     #turn page
     first_page.click(lambda s:(1, -s) , inputs=[turn_page_switch], outputs=[page_index, turn_page_switch])
@@ -328,6 +347,7 @@ def on_ui_settings():
     section = ('images-history', "Images Browser")
     shared.opts.add_option("images_history_preload", shared.OptionInfo(False, "Preload images at startup", section=section))
     shared.opts.add_option("images_record_paths", shared.OptionInfo(True, "Record accessable images directories", section=section))
+    shared.opts.add_option("images_copy_image", shared.OptionInfo(False, "Move to favorites button copies instead of moving", section=section))
     shared.opts.add_option("images_delete_message", shared.OptionInfo(True, "Print image deletion messages to the console", section=section))
     shared.opts.add_option("images_history_page_columns", shared.OptionInfo(6, "Number of columns on the page", section=section))
     shared.opts.add_option("images_history_page_rows", shared.OptionInfo(6, "Number of rows on the page", section=section))
