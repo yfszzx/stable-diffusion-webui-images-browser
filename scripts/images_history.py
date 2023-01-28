@@ -11,6 +11,7 @@ from modules import shared, scripts
 from modules import script_callbacks
 from PIL import Image
 from pathlib import Path
+from send2trash import send2trash
 from typing import List, Tuple
 
 favorite_tab_name = "Favorites"
@@ -19,6 +20,14 @@ num_of_imgs_per_page = 0
 loads_files_num = 0
 path_recorder_filename = os.path.join(scripts.basedir(), "path_recorder.txt")
 image_ext_list = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"]
+
+def delete_recycle(filename):
+    if opts.images_delete_recycle:
+        send2trash(filename)
+    else:
+        os.remove(filename)
+
+    return
 
 def reduplicative_file_move(src, dst):
     def same_name_file(basename, path):
@@ -76,11 +85,11 @@ def delete_image(delete_num, name, filenames, image_index, visible_num):
                         continue
                     if opts.images_delete_message:
                         print(f"Deleting file {name}")
-                    os.remove(name)
+                    delete_recycle(name)
                     visible_num -= 1
                     txt_file = os.path.splitext(name)[0] + ".txt"
                     if os.path.exists(txt_file):
-                        os.remove(txt_file)
+                        delete_recycle(txt_file)
                 else:
                     print(f"File does not exist {name}")
             else:
@@ -316,7 +325,7 @@ def create_tab(tabname):
     turn_page_switch.change(fn=None, inputs=[tabname_box], outputs=None, _js="images_history_turnpage")
     turn_page_switch.change(fn=lambda:(gr.update(visible=False), gr.update(visible=False)), inputs=None, outputs=[delete_panel, button_panel])
 
-    # other funcitons
+    # other functions
     set_index.click(show_image_info, _js="images_history_get_current_img", inputs=[tabname_box, image_index, page_index, filenames], outputs=[img_file_name, img_file_time, image_index, hidden])
     set_index.click(fn=lambda:(gr.update(visible=True), gr.update(visible=True)), inputs=None, outputs=[delete_panel, button_panel]) 
     img_file_name.change(fn=lambda : "", inputs=None, outputs=[collected_warning])  
@@ -349,6 +358,7 @@ def on_ui_settings():
     shared.opts.add_option("images_record_paths", shared.OptionInfo(True, "Record accessable images directories", section=section))
     shared.opts.add_option("images_copy_image", shared.OptionInfo(False, "Move to favorites button copies instead of moving", section=section))
     shared.opts.add_option("images_delete_message", shared.OptionInfo(True, "Print image deletion messages to the console", section=section))
+    shared.opts.add_option("images_delete_recycle", shared.OptionInfo(False, "Use recycle bin when deleting images", section=section))
     shared.opts.add_option("images_history_page_columns", shared.OptionInfo(6, "Number of columns on the page", section=section))
     shared.opts.add_option("images_history_page_rows", shared.OptionInfo(6, "Number of rows on the page", section=section))
     shared.opts.add_option("images_history_pages_perload", shared.OptionInfo(20, "Minimum number of pages per load", section=section))
@@ -358,6 +368,5 @@ script_callbacks.on_ui_settings(on_ui_settings)
 script_callbacks.on_ui_tabs(on_ui_tabs)
 
 #TODO:
-#recycle bin
 #move by arrow key
 #generate info in txt
