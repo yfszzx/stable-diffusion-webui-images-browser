@@ -20,15 +20,40 @@ num_of_imgs_per_page = 0
 loads_files_num = 0
 path_recorder_filename = os.path.join(scripts.basedir(), "path_recorder.txt")
 image_ext_list = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"]
+none_select = "Nothing selected"
 
 def delete_recycle(filename):
     if opts.images_delete_recycle:
         send2trash(filename)
     else:
         os.remove(filename)
-
     return
 
+def img_path_subdirs_get(img_path):
+    subdirs = []
+    subdirs.append(none_select)
+    for item in os.listdir(img_path):
+        item_path = os.path.join(img_path, item)
+        if os.path.isdir(item_path):
+            subdirs.append(item_path)
+    return gr.update(choices=subdirs)
+
+def img_path_add_remove(img_dir, path_recorder, add_remove):
+    if (add_remove == "add" and img_dir not in path_recorder) or (add_remove == "remove" and img_dir in path_recorder):
+        path_recorder_filename_tmp = f"{path_recorder_filename}.tmp"
+        if os.path.exists(path_recorder_filename_tmp):
+            os.remove(path_recorder_filename_tmp)
+        if add_remove == "add":
+            path_recorder.append(img_dir)
+        else:
+            path_recorder.remove(img_dir)
+        path_recorder = sorted(path_recorder)
+        with open(path_recorder_filename_tmp, "a") as f:
+            for x in path_recorder:
+                f.write(x + "\n")
+        os.replace(path_recorder_filename_tmp, path_recorder_filename)
+    return gr.update(choices=path_recorder, value=img_dir), path_recorder, gr.update(choices=path_recorder, value=img_dir)
+        
 def reduplicative_file_move(src, dst):
     def same_name_file(basename, path):
         name, ext = os.path.splitext(basename)
@@ -106,9 +131,9 @@ def traverse_all_files(curr_path, image_list) -> List[Tuple[str, os.stat_result]
         if os.path.splitext(fname)[1] in image_ext_list:
             image_list.append(f_info)
         elif stat.S_ISDIR(fstat.st_mode):
-            image_list = traverse_all_files(fname, image_list)
+            if opts.images_history_with_subdirs:
+                image_list = traverse_all_files(fname, image_list)
     return image_list
-
 
 def get_all_images(dir_name, sort_by, keyword):
     fileinfos = traverse_all_files(dir_name, [])
@@ -170,38 +195,33 @@ def show_image_info(tabname_box, num, page_index, filenames):
 
 def change_dir(img_dir, path_recorder, load_switch, img_path_history):
     warning = None
-    try:
-        if not cmd_opts.administrator:        
-            head = os.path.abspath(".")
-            abs_path = os.path.abspath(img_dir)
-            if len(abs_path) < len(head) or abs_path[:len(head)] != head:
-                warning = f"You have not permission to visit {img_dir}. If you want visit all directories, add command line argument option '--administrator', <a style='color:#990' href='https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings'>More detail here</a>"
-    except:
-        pass  
-    if warning is None:
-        try:
-            if os.path.exists(img_dir):
-                try:
-                    f = os.listdir(img_dir)                
-                except:
-                    warning = f"'{img_dir} is not a directory"
-            else:
-                warning = "The directory does not exist"
-        except:
-            warning = "The format of the directory is incorrect"   
-
-    if warning is None: 
-        if img_dir not in path_recorder:
-            path_recorder.append(img_dir)
-        if os.path.exists(path_recorder_filename):
-            os.remove(path_recorder_filename)
-        if opts.images_record_paths:
-            with open(path_recorder_filename, "a") as f:
-                for x in path_recorder:
-                    f.write(x + "\n")
-        return "", gr.update(visible=True), gr.Dropdown.update(choices=path_recorder, value=img_dir), path_recorder, img_dir
+    if img_dir == none_select:
+        return warning, gr.update(visible=False), img_path_history, path_recorder, load_switch, img_dir
     else:
-        return warning, gr.update(visible=False), img_path_history, path_recorder, load_switch
+        try:
+            if not cmd_opts.administrator:        
+                head = os.path.abspath(".")
+                abs_path = os.path.abspath(img_dir)
+                if len(abs_path) < len(head) or abs_path[:len(head)] != head:
+                    warning = f"You have not permission to visit {img_dir}. If you want visit all directories, add command line argument option '--administrator', <a style='color:#990' href='https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings'>More detail here</a>"
+        except:
+            pass  
+        if warning is None:
+            try:
+                if os.path.exists(img_dir):
+                    try:
+                        f = os.listdir(img_dir)                
+                    except:
+                        warning = f"'{img_dir} is not a directory"
+                else:
+                    warning = "The directory does not exist"
+            except:
+                warning = "The format of the directory is incorrect"   
+
+        if warning is None: 
+            return "", gr.update(visible=True), gr.Dropdown.update(choices=path_recorder, value=img_dir), path_recorder, img_dir, img_dir
+        else:
+            return warning, gr.update(visible=False), img_path_history, path_recorder, load_switch, img_dir
 
 def update_move_text(unused):
     return f'{"Move" if not opts.images_copy_image else "Copy"} to favorites'
@@ -238,9 +258,15 @@ def create_tab(tabname):
 
     with gr.Row(visible= custom_dir): 
         img_path = gr.Textbox(dir_name, label="Images directory", placeholder="Input images directory", interactive=custom_dir)  
-        img_path_history = gr.Dropdown(path_recorder)
+        img_path_history = gr.Dropdown(choices=path_recorder, label="Saved directories")
         path_recorder = gr.State(path_recorder)
- 
+        img_path_subdirs = gr.Dropdown(choices=[none_select], value=none_select, label="Sub directories", interactive=True, elem_id="img_path_subdirs")
+
+    with gr.Row(visible= custom_dir): 
+        img_path_save_button = gr.Button(value="Add to saved directories")
+        img_path_remove_button = gr.Button(value="Remove from saved directories")
+        img_path_subdirs_button = gr.Button(value="Get sub directories")
+        
     with gr.Row(visible= not custom_dir, elem_id=tabname + "_images_history") as main_panel:
         with gr.Column():  
             with gr.Row():    
@@ -291,10 +317,12 @@ def create_tab(tabname):
                         info2 = gr.Textbox()
                         load_switch = gr.Textbox(value="load_switch", label="load_switch")
                         turn_page_switch = gr.Number(value=1, label="turn_page_switch")
+                        img_path_add = gr.Textbox(value="add")
+                        img_path_remove = gr.Textbox(value="remove")
     with gr.Row():                 
         warning_box = gr.HTML() 
 
-    change_dir_outputs = [warning_box, main_panel, img_path_history, path_recorder, load_switch]
+    change_dir_outputs = [warning_box, main_panel, img_path_history, path_recorder, load_switch, img_path]
     img_path.submit(change_dir, inputs=[img_path, path_recorder, load_switch, img_path_history], outputs=change_dir_outputs)
     img_path_history.change(change_dir, inputs=[img_path_history, path_recorder, load_switch, img_path_history], outputs=change_dir_outputs)
     img_path_history.change(lambda x:x, inputs=[img_path_history], outputs=[img_path])
@@ -325,6 +353,28 @@ def create_tab(tabname):
     turn_page_switch.change(fn=None, inputs=[tabname_box], outputs=None, _js="images_history_turnpage")
     turn_page_switch.change(fn=lambda:(gr.update(visible=False), gr.update(visible=False)), inputs=None, outputs=[delete_panel, button_panel])
 
+    # Others
+    img_path_subdirs_button.click(
+        fn=img_path_subdirs_get, 
+        inputs=[img_path], 
+        outputs=[img_path_subdirs]
+    )
+    img_path_subdirs.change(
+        fn=change_dir, 
+        inputs=[img_path_subdirs, path_recorder, load_switch, img_path_history], 
+        outputs=change_dir_outputs
+    )
+    img_path_save_button.click(
+        fn=img_path_add_remove, 
+        inputs=[img_path, path_recorder, img_path_add], 
+        outputs=[img_path_subdirs, path_recorder, img_path_history]
+    )
+    img_path_remove_button.click(
+        fn=img_path_add_remove, 
+        inputs=[img_path, path_recorder, img_path_remove], 
+        outputs=[img_path_subdirs, path_recorder, img_path_history]
+    )
+
     # other functions
     set_index.click(show_image_info, _js="images_history_get_current_img", inputs=[tabname_box, image_index, page_index, filenames], outputs=[img_file_name, img_file_time, image_index, hidden])
     set_index.click(fn=lambda:(gr.update(visible=True), gr.update(visible=True)), inputs=None, outputs=[delete_panel, button_panel]) 
@@ -354,8 +404,8 @@ def on_ui_tabs():
 
 def on_ui_settings():
     section = ('images-history', "Images Browser")
+    shared.opts.add_option("images_history_with_subdirs", shared.OptionInfo(False, "Include images in sub directories", section=section))
     shared.opts.add_option("images_history_preload", shared.OptionInfo(False, "Preload images at startup", section=section))
-    shared.opts.add_option("images_record_paths", shared.OptionInfo(True, "Record accessable images directories", section=section))
     shared.opts.add_option("images_copy_image", shared.OptionInfo(False, "Move to favorites button copies instead of moving", section=section))
     shared.opts.add_option("images_delete_message", shared.OptionInfo(True, "Print image deletion messages to the console", section=section))
     shared.opts.add_option("images_delete_recycle", shared.OptionInfo(False, "Use recycle bin when deleting images", section=section))
