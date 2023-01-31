@@ -21,9 +21,6 @@ You can also install it manually by running the following command from within th
 - Sort order
 - View and save favorites with individual folder depth
 
-Install:
-- Fixed send2trash module check
-
 ## Credit
 
 Credit goes above all to the original maintainer of this extension: https://github.com/yfszzx/stable-diffusion-webui-images-browser
