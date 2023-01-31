@@ -28,6 +28,7 @@ none_select = "Nothing selected"
 refresh_symbol = '\U0001f504'  # 🔄
 up_symbol = '\U000025b2'  # ▲
 down_symbol = '\U000025bc'  # ▼
+warning_permission = "You have no permission to visit {}. If you want to visit all directories, add command line argument option '--administrator', <a style='color:#990' href='https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings' target='_blank' rel='noopener noreferrer'>More details here</a>"
 current_depth = 0
 
 def delete_recycle(filename):
@@ -62,7 +63,11 @@ def img_path_add_remove(img_dir, path_recorder, add_remove, img_path_depth):
             json.dump(path_recorder, f, indent=4)
         os.replace(path_recorder_filename_tmp, path_recorder_filename)
         path_recorder_formatted = [value.get("path_display") for key, value in path_recorder.items()]
-    return path_recorder, gr.update(choices=path_recorder_formatted, value=path_recorder[img_dir]["path_display"])
+    if add_remove == "remove":
+        selected = None
+    else:
+        selected = path_recorder[img_dir]["path_display"]
+    return path_recorder, gr.update(choices=path_recorder_formatted, value=selected)
 
 def sort_order_flip(turn_page_switch, sort_order):
     if sort_order == up_symbol:
@@ -230,7 +235,7 @@ def get_image_page(img_path, page_index, filenames, keyword, sort_by, sort_order
         head = os.path.abspath(".")
         abs_path = os.path.abspath(img_path)
         if len(abs_path) < len(head) or abs_path[:len(head)] != head:
-            warning = f"You have not permission to visit {img_path}. If you want visit all directories, add command line argument option '--administrator', <a style='color:#990' href='https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings'>More detail here</a>"
+            warning = warning_permission.format(img_path)
             return None, 0, None, "", "", "", None, None, warning
     if page_index == 1 or page_index == 0 or len(filenames) == 0:
         filenames = get_all_images(img_path, sort_by, sort_order, keyword, tabname_box, img_path_depth)
@@ -269,7 +274,7 @@ def change_dir(img_dir, path_recorder, load_switch, img_path_history, img_path_d
                 head = os.path.abspath(".")
                 abs_path = os.path.abspath(img_dir)
                 if len(abs_path) < len(head) or abs_path[:len(head)] != head:
-                    warning = f"You have no permission to visit {img_dir}. If you want to visit all directories, add command line argument option '--administrator', <a style='color:#990' href='https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Command-Line-Arguments-and-Settings'>More details here</a>"
+                    warning = warning_permission.format(img_dir)
         except:
             pass  
         if warning is None:
