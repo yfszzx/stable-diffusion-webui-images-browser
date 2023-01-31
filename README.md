@@ -12,6 +12,18 @@ You can also install it manually by running the following command from within th
 
 	git clone https://github.com/AlUlkesh/stable-diffusion-webui-images-browser/ extensions/stable-diffusion-webui-images-browser
 
+## Recent updates
+- Recyle bin option
+- Add/Remove from saved directories, via buttons
+- New dropdown with subdirs
+- Option to not show the images from subdirs
+- Refresh button
+- Sort order
+- View and save favorites with individual folder depth
+
+Install:
+- Fixed send2trash module check
+
 ## Credit
 
 Credit goes above all to the original maintainer of this extension: https://github.com/yfszzx/stable-diffusion-webui-images-browser
