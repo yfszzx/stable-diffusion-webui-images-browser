@@ -36,8 +36,12 @@ def reduplicative_file_move(src, dst):
         return f"{name}({max_num + 1}){ext}"
     name = os.path.basename(src)
     save_name = os.path.join(dst, name)
+    text_info_filename=str(src).replace(".jpg",".txt").replace(".png",".txt")
+    
     if not os.path.exists(save_name):
         shutil.move(src, dst)
+        if opts.move_with_txt_info and os.path.exists(text_info_filename):
+            shutil.move(text_info_filename, dst)
     else:
         name = same_name_file(name, dst)
         shutil.move(src, os.path.join(dst, name))
@@ -316,6 +320,7 @@ def on_ui_settings():
     shared.opts.add_option("images_history_preload", shared.OptionInfo(False, "Preload images at startup", section=section))
     shared.opts.add_option("images_record_paths", shared.OptionInfo(True, "Record accessable images directories", section=section))
     shared.opts.add_option("images_delete_message", shared.OptionInfo(True, "Print image deletion messages to the console", section=section))
+    shared.opts.add_option("move_with_txt_info",shared.OptionInfo(True, "Moving txt-info file and image together(if exist)", section=section))
     shared.opts.add_option("images_history_page_columns", shared.OptionInfo(6, "Number of columns on the page", section=section))
     shared.opts.add_option("images_history_page_rows", shared.OptionInfo(6, "Number of rows on the page", section=section))
     shared.opts.add_option("images_history_pages_perload", shared.OptionInfo(20, "Minimum number of pages per load", section=section))
